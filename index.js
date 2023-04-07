@@ -1,68 +1,39 @@
-const express = require('express')//[M1S09] Ex 1
-const connection = require('./src/dataBase')
-const Place = require('./src/models/chores')//[M1S09] Ex 2
+require('dotenv').config()
+const express = require('express');
+
+const connection = require('./src/database');
+
+const log = require('./src/middlewares/log');
+const validateNewUser = require('./src/middlewares/validate-new-user');
+const validateToken = require('./src/middlewares/validate-token');
+
+const createPlace = require('./src/controllers/tasks/createPlace');
+const findPlace = require('./src/controllers/tasks/findPlace');
+const deletePlace = require('./src/controllers/tasks/deletePlace');
+const updatePlace = require('./src/controllers/tasks/updatePlace');
+
+const createUser = require('./src/controllers/users/createUser');
+const createLogin = require('./src/controllers/users/createLogin');
 
 const app = express()
-
 app.use(express.json()) 
 
+app.use(log)
+
 connection.authenticate()
-connection.sync({alter: true})
+connection.sync({ alter: true })
+console.log('Connection has been established successfully.');
 
-//[M1S09] Ex 3
-app.post('/places', async (request, response) => {
-    try {
-
-       const data = {
-        name: request.body.name,
-        contact: request.body.contact,
-        opening_hours: request.body.opening_hours,
-        description: request.body.description,
-        latitude: request.body.latitude,
-        longitude: request.body.longitude
-       } 
-
-       const place = await Place.create(data)
-
-       response.status(201).json(place)
-
-
-    } catch (error) {
-        console.log(error)
-        response.status(500).json({message: 'Unable to complete the operation'})
-    }
+app.get('/', (request, response) => {
+    response.json({ messagem: "Welcome" })
 })
 
-//[M1S09] Ex 4
-app.get('/places', async (request, response) => {
-    try {
-        const places = await Place.findAll()
-        return response.json(places)
-    } catch (error) {
-        
-    }
-})
+app.post('/tarefas', validateToken, createPlace)
+app.get('/tarefas', validateToken, findPlace)
+app.delete('/tarefas/:id', validateToken, deletePlace)
+app.put('/tarefas/:id', validateToken, updatePlace)
 
-//[M1S09] Ex 5
-app.delete('/places/:id', async (request, response) => {
-    console.log(request.params.id)
-    
-     await Place.destroy({
-        where:{
-            id: request.params.id
-        }
-    })
-    response.status(204).json()
-})
+app.post('/users', validateNewUser, createUser)
+app.post('/users/login', createLogin )
 
-//[M1S09] Ex 6
-app.put('./src/models:id', async (req, res) => {
-    let description = req.body.description;
-    models[req.params.id] = description;
-    return res.json(models[req.params.id]);
-});
-
-//[M1S09] Ex 1
-app.listen(9999, () => {
-    console.log("Online Server")
-})
+app.listen(6666, () => console.log("online application"))
